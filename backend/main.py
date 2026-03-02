@@ -519,7 +519,7 @@ async def infer_frame(request: Request):
             return JSONResponse(content={"error": "Could not decode image"}, status_code=400)
 
         # Ensure model is loaded (lazy load for browser endpoint)
-        global yolo_model
+        global yolo_model, infer_miss_count
         if yolo_model is None and YOLO is not None:
             try:
                 yolo_model = YOLO(MODEL_PATH, task="detect")
