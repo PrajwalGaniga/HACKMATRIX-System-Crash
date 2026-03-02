@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:intl/intl.dart';
 import '../services/socket_service.dart';
 import '../services/haptic_service.dart';
 import '../models/intervention_model.dart';
@@ -13,6 +14,11 @@ import 'intervention_hub.dart';
 import 'game_shake.dart';
 import 'game_neon_trace.dart';
 import 'game_bubble_pop.dart';
+import 'game_bubble_wrap.dart';
+import 'game_coloring.dart';
+import 'game_breathing.dart';
+import 'game_mindful_puzzle.dart';
+import 'game_idle_garden.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -462,6 +468,48 @@ class _GamesTab extends StatelessWidget {
         Text('No scores. No levels. Just relief.', style: TextStyle(fontSize: 11, color: Colors.grey[700])),
         const SizedBox(height: 16),
         _GameCard(
+          emoji: '🫧', title: 'Virtual Bubble Wrap Simulator',
+          subtitle: 'Pop the grid of bubble cells\nTactile satisfaction · Fidget outlet',
+          color: const Color(0xFF76E4F7),
+          why: 'Repetitive tapping provides a simple distraction to replace anxious thoughts.',
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BubbleWrapGame())),
+        ),
+        const SizedBox(height: 12),
+        _GameCard(
+          emoji: '🎨', title: 'Relaxing Coloring Canvas',
+          subtitle: 'Fill the mandala with color\nArt therapy · Meditative focus',
+          color: const Color(0xFFF6AD55),
+          why: 'Focusing on coloring patterns helps the mind relax and achieve a meditative state.',
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RelaxingColoringGame())),
+        ),
+        const SizedBox(height: 12),
+        _GameCard(
+          emoji: '💨', title: 'Guided Breathing Trainer',
+          subtitle: '4-4-4 box breathing\nPhysiological self-regulation',
+          color: const Color(0xFF63B3ED),
+          why: 'Gamified deep-breathing exercises stabilize heart-rate variability.',
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BreathingTrainerGame())),
+        ),
+        const SizedBox(height: 12),
+        _GameCard(
+          emoji: '🧩', title: 'Mindful Puzzle Game',
+          subtitle: 'Gentle color gradient sorting\nCognitive focus · Flow state',
+          color: const Color(0xFFB794F4),
+          why: 'Solving puzzles channels creative energy into solvable problems, distracting from stress.',
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MindfulPuzzleGame())),
+        ),
+        const SizedBox(height: 12),
+        _GameCard(
+          emoji: '🌿', title: 'Idle Garden Simulator',
+          subtitle: 'Tap to plant emoji seeds\nNurturing · Slow accomplishment',
+          color: const Color(0xFF68D391),
+          why: 'Cozy and slow-paced gameplay soothes nerves and refocuses racing thoughts.',
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const IdleGardenGame())),
+        ),
+        const SizedBox(height: 20),
+        const Divider(color: Colors.white12),
+        const SizedBox(height: 20),
+        _GameCard(
           emoji: '💥', title: 'Gravity Dust',
           subtitle: 'Shake to clear stress particles\nSomatic discharge · Adrenaline dump',
           color: const Color(0xFFFF6B35),
@@ -472,7 +520,7 @@ class _GamesTab extends StatelessWidget {
         _GameCard(
           emoji: '🌌', title: 'Neon Trace',
           subtitle: 'Follow the glowing path with your finger\nPanic-loop killer · Grounding',
-          color: const Color(0xFF63B3ED),
+          color: const Color(0xFF4FD1C5),
           why: 'Motor tasks force your brain to the present moment, halting tilt and panic loops.',
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NeonTraceGame())),
         ),
@@ -480,7 +528,7 @@ class _GamesTab extends StatelessWidget {
         _GameCard(
           emoji: '🫧', title: 'Bubble Pop',
           subtitle: 'Tap floating bubbles to pop them\nTactile grounding · Sensory reset',
-          color: const Color(0xFFB794F4),
+          color: const Color(0xFFFC8181),
           why: 'The tactile satisfaction of popping activates the parasympathetic nervous system.',
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BubblePopGame())),
         ),
@@ -574,9 +622,12 @@ class _InterventionList extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withValues(alpha: 0.2))),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Text('${h.toastEmoji} ${h.stressLevel} — ${h.action}', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color, fontFamily: 'monospace')),
-              const Spacer(),
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('${h.toastEmoji} ${h.stressLevel} — ${h.action}', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color, fontFamily: 'monospace')),
+                const SizedBox(height: 2),
+                Text(DateFormat('MMM d, h:mm a').format(h.timestamp), style: TextStyle(fontSize: 9, color: Colors.grey[600], fontFamily: 'monospace')),
+              ])),
               if (h.triggerCall) const Text('📞 Called', style: TextStyle(fontSize: 9, color: Color(0xFF76E4F7))),
             ]),
             if (h.gameId != null && h.gameId!.isNotEmpty) ...[

@@ -8,7 +8,7 @@ import Controls from './components/Controls';
 import StatusBar from './components/StatusBar';
 import Notification from './components/Notification';
 
-const BACKEND_URL = 'https://dawdlingly-pseudoinsane-pa.ngrok-free.dev';
+const BACKEND_URL = 'http://127.0.0.1:8000';
 const ACTIVE_APP_POLL_MS = 4000;
 
 export default function App() {

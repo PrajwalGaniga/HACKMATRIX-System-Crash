@@ -157,9 +157,11 @@ Your task:
    - VS Code/coding → coding joke, encouraging
    - Under 120 characters
 3. Pick the BEST game for this context:
-   - PUBG/game/angry → "GRAVITY_DUST" (shake phone to discharge adrenaline)
-   - VS Code/overwhelmed → "NEON_TRACE" (calming path-trace grounding)
-   - Default/mild → "BUBBLE_POP" (satisfying tactile bubble popping)
+   - High cognitive load/racing thoughts → "MINDFUL_PUZZLE" (color sorting for slow focus)
+   - Angry/frustrated/tilt → "BUBBLE_WRAP" (rapid tactile popping to release energy)
+   - Fast heart rate/panic → "BREATHING_TRAINER" (4-4-4 box breathing guide)
+   - Overwhelmed/stuck → "RELAXING_COLORING" (art therapy, filling mandala)
+   - General burnout/mild stress → "IDLE_GARDEN" (gentle plant growing tap mechanics)
 4. Generate breathing_tip: a 4-7-8 or box breathing instruction, 1 sentence, warm tone.
 5. Generate rest_reminder: friendly nudge to hydrate/stand/look away, 1 sentence.
 6. TwiML for Polly.Joanna voice call — max 2 warm sentences. Trigger ONLY on HIGH.
@@ -176,7 +178,7 @@ Respond ONLY with valid JSON, no markdown fences:
   "intervention_tip": "calming micro-tip",
   "breathing_tip": "breathe in for 4s, hold 4s, out 4s — you've got this",
   "rest_reminder": "Drink some water and look out a window for 20 seconds.",
-  "game_id": "GRAVITY_DUST" | "NEON_TRACE" | "BUBBLE_POP",
+  "game_id": "BUBBLE_WRAP" | "RELAXING_COLORING" | "BREATHING_TRAINER" | "MINDFUL_PUZZLE" | "IDLE_GARDEN",
   "twiml_script": "<Response><Say voice='Polly.Joanna'>YOUR_SCRIPT</Say></Response>",
   "trigger_call": true | false
 }}

@@ -2,15 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/intervention_model.dart';
 import '../services/haptic_service.dart';
-import 'game_shake.dart';
-import 'game_neon_trace.dart';
-import 'game_bubble_pop.dart';
 import 'game_bubble_wrap.dart';
+import 'game_coloring.dart';
 import 'game_breathing.dart';
-import 'game_idle_garden.dart';
 import 'game_mindful_puzzle.dart';
+import 'game_idle_garden.dart';
 
-/// All available game descriptors
+/// Master list of the 5 targetless games
 class _GameInfo {
   final String id, emoji, title, subtitle;
   final Color color;
@@ -19,13 +17,11 @@ class _GameInfo {
 }
 
 const _games = [
-  _GameInfo(id: 'BUBBLE_WRAP',     emoji: '🫧', title: 'Bubble Wrap',     subtitle: 'Pop the grid • reset your senses',      color: Color(0xFF76E4F7), builder: BubbleWrapGame.new),
-  _GameInfo(id: 'BREATHING',       emoji: '💨', title: 'Breathing',        subtitle: '4-4-4 box breathing • guided circle',   color: Color(0xFF63B3ED), builder: BreathingTrainerGame.new),
-  _GameInfo(id: 'IDLE_GARDEN',     emoji: '🌿', title: 'Idle Garden',      subtitle: 'Tap to plant • watch things grow',      color: Color(0xFF68D391), builder: IdleGardenGame.new),
-  _GameInfo(id: 'MINDFUL_PUZZLE',  emoji: '🎨', title: 'Mindful Puzzle',   subtitle: 'Sort color tiles • slow focus',         color: Color(0xFFB794F4), builder: MindfulPuzzleGame.new),
-  _GameInfo(id: 'GRAVITY_DUST',    emoji: '💥', title: 'Gravity Dust',     subtitle: 'Shake to clear stress particles',        color: Color(0xFFFF6B35), builder: GravityDustGame.new),
-  _GameInfo(id: 'NEON_TRACE',      emoji: '🌌', title: 'Neon Trace',       subtitle: 'Trace the glowing path • grounding',    color: Color(0xFF63B3ED), builder: NeonTraceGame.new),
-  _GameInfo(id: 'BUBBLE_POP',      emoji: '🫧', title: 'Bubble Pop',       subtitle: 'Tap rising bubbles • tactile relief',   color: Color(0xFFB794F4), builder: BubblePopGame.new),
+  _GameInfo(id: 'BUBBLE_WRAP',       emoji: '🫧', title: 'Bubble Wrap',      subtitle: 'Pop the grid • Reset senses',       color: Color(0xFF76E4F7), builder: BubbleWrapGame.new),
+  _GameInfo(id: 'RELAXING_COLORING', emoji: '🎨', title: 'Coloring',         subtitle: 'Fill the mandala • Art therapy',    color: Color(0xFFF6AD55), builder: RelaxingColoringGame.new),
+  _GameInfo(id: 'BREATHING_TRAINER', emoji: '💨', title: 'Breathing',        subtitle: '4-4-4 Box • Guided circle',         color: Color(0xFF63B3ED), builder: BreathingTrainerGame.new),
+  _GameInfo(id: 'MINDFUL_PUZZLE',    emoji: '🧩', title: 'Mindful Puzzle',   subtitle: 'Color tiles • Slow focus',          color: Color(0xFFB794F4), builder: MindfulPuzzleGame.new),
+  _GameInfo(id: 'IDLE_GARDEN',       emoji: '🌿', title: 'Idle Garden',      subtitle: 'Tap to plant • Watch it grow',      color: Color(0xFF68D391), builder: IdleGardenGame.new),
 ];
 
 _GameInfo _findGame(String? id) =>
@@ -54,7 +50,7 @@ class _InterventionHubState extends State<InterventionHub> with TickerProviderSt
     HapticService.loopHeartbeat(times: 3);
 
     // Auto-launch Gemini-selected game after 3s countdown
-    if (widget.intervention.gameId != null) {
+    if (widget.intervention.gameId != null && widget.intervention.gameId!.isNotEmpty) {
       _launchTimer = Timer.periodic(const Duration(seconds: 1), (t) {
         if (!mounted) { t.cancel(); return; }
         setState(() => _countdown--);
@@ -122,7 +118,7 @@ class _InterventionHubState extends State<InterventionHub> with TickerProviderSt
               const SizedBox(height: 16),
               Text(i.toastEmoji, style: const TextStyle(fontSize: 52)),
               const SizedBox(height: 10),
-              const Text('Prajwal, take a breath.', textAlign: TextAlign.center, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
+              const Text('Aegis is standing guard.', textAlign: TextAlign.center, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
               const SizedBox(height: 6),
               if (i.toastMsg.isNotEmpty)
                 Padding(
@@ -151,14 +147,14 @@ class _InterventionHubState extends State<InterventionHub> with TickerProviderSt
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                   decoration: BoxDecoration(color: const Color(0xFF76E4F7).withValues(alpha: 0.06), borderRadius: BorderRadius.circular(10)),
-                  child: const Text('📞 Calling +91 9110 687 983 via Polly.Joanna', style: TextStyle(fontSize: 10, color: Color(0xFF76E4F7), fontFamily: 'monospace')),
+                  child: const Text('📞 Calling +91 9110 687 983 via Twilio', style: TextStyle(fontSize: 10, color: Color(0xFF76E4F7), fontFamily: 'monospace')),
                 ),
               ),
 
               const Spacer(),
 
               // Auto-launch banner
-              if (i.gameId != null && _countdown > 0)
+              if (i.gameId != null && i.gameId!.isNotEmpty && _countdown > 0)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Container(

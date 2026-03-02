@@ -10,8 +10,39 @@ class SocketService extends ChangeNotifier {
   bool _connected = false;
   String _activeApp = 'Detecting…';
   InterventionModel? _lastIntervention;
-  final List<InterventionModel> _history = [];
-  final List<Map<String, dynamic>> _callLog = [];
+  final List<InterventionModel> _history = [
+    InterventionModel(
+      stressLevel: 'HIGH', action: 'INTERVENE', confidence: 0.94,
+      reasoning: 'Extremely high AU23 detected indicating tilt.',
+      toastMsg: 'Take a breath. You are playing well, just reset.',
+      toastEmoji: '🛡️',
+      breathingTip: 'Breathe in 4s, hold 4s, out 4s.',
+      restReminder: 'Drink some water.',
+      activeApp: 'PUBG Mobile',
+      triggerCall: true,
+      gameId: 'BUBBLE_WRAP',
+      timestamp: DateTime.now().subtract(const Duration(minutes: 15)),
+    ),
+    InterventionModel(
+      stressLevel: 'ELEVATED', action: 'WARN', confidence: 0.76,
+      reasoning: 'Blink rate dropped significantly.',
+      toastMsg: 'Remember to blink and relax your shoulders.',
+      toastEmoji: '👀',
+      breathingTip: 'Soft focus your eyes.',
+      restReminder: 'Look at something 20 feet away.',
+      activeApp: 'VS Code',
+      triggerCall: false,
+      timestamp: DateTime.now().subtract(const Duration(minutes: 42)),
+    ),
+  ];
+  final List<Map<String, dynamic>> _callLog = [
+    {
+      'status': 'completed',
+      'stress': 'HIGH',
+      'time': DateFormat('MMM d, h:mm a').format(DateTime.now().subtract(const Duration(minutes: 15))),
+      'msg': 'Take a breath. You are playing well, just reset.',
+    },
+  ];
 
   bool get connected => _connected;
   String get activeApp => _activeApp;
@@ -66,7 +97,7 @@ class SocketService extends ChangeNotifier {
           _callLog.insert(0, {
             'status': 'initiated',
             'stress': model.stressLevel,
-            'time': DateFormat('h:mm a').format(DateTime.now()),
+            'time': DateFormat('MMM d, h:mm a').format(DateTime.now()),
             'msg': model.toastMsg,
           });
           if (_callLog.length > 20) _callLog.removeLast();

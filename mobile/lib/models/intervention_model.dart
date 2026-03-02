@@ -13,8 +13,9 @@ class InterventionModel {
   final bool triggerCall;
   final String? gameId;
   final Map<String, dynamic> auData;
+  final DateTime timestamp;
 
-  const InterventionModel({
+  InterventionModel({
     required this.stressLevel,
     required this.action,
     this.level = 'NONE',
@@ -29,7 +30,8 @@ class InterventionModel {
     this.triggerCall = false,
     this.gameId,
     this.auData = const {},
-  });
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
 
   factory InterventionModel.fromJson(Map<String, dynamic> json) {
     return InterventionModel(
