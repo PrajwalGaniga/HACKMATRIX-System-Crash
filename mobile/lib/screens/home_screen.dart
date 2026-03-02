@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import '../services/socket_service.dart';
+import '../services/auth_service.dart';
 import '../services/haptic_service.dart';
 import '../models/intervention_model.dart';
 import '../widgets/recovery_chart.dart';
@@ -29,55 +30,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   static const _backend = SocketService.backendUrl;
-  Map<String, dynamic> _user = {};
-  StreamSubscription? _accelSub;
-  double _shakeIntensity = 0.0;
-  int _selectedTab = 0;
-  bool _notifEnabled = true;
-  bool _vibrateEnabled = true;
-  bool _autoNavigate = true;
-  InterventionModel? _inAppNotif;
-  Timer? _notifTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchUser();
-    _startAccel();
-    // Wire notification callbacks after first frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final svc = context.read<SocketService>();
-      svc.onElevated = _showInAppBanner;
-      svc.onHighTilt = _showTiltWarning;
-    });
-  }
-
-  /// Shows the full-screen Glassmorphism Tilt Warning as a modal dialog
-  void _showTiltWarning(InterventionModel model) {
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.black.withValues(alpha: 0.7),
-      builder: (_) => TiltWarningScreen(model: model),
-    );
-  }
-
-  Future<void> _fetchUser() async {
-    try {
-      final r = await http.get(Uri.parse('$_backend/api/user'));
-      if (r.statusCode == 200) setState(() => _user = jsonDecode(r.body));
-    } catch (_) {
-      setState(() => _user = {
-        'name': 'Prajwal', 'cgpa': 9.0,
-        'interests': ['React', 'ML', 'E-Sports'],
-        'role': 'ML Engineer / Pro Gamer',
-        'recovery_score': 87, 'tilt_events_avoided': 12,
-        'blink_normalization': 76, 'sessions_today': 4,
-      });
-    }
-  }
-
   void _startAccel() {
     _accelSub = accelerometerEventStream().listen((ev) {
       final v = (ev.x.abs() + ev.y.abs() + ev.z.abs()) / 3;
@@ -119,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           Expanded(
             child: IndexedStack(index: _selectedTab, children: [
-              _DashboardTab(user: _user, socket: socket, shakeIntensity: _shakeIntensity),
+              _DashboardTab(user: context.watch<AuthService>().user ?? {}, socket: socket, shakeIntensity: _shakeIntensity),
               _GamesTab(),
               _LogsTab(history: socket.history, callLog: socket.callLog),
               _SettingsTab(
@@ -167,6 +119,10 @@ class _Navbar extends StatelessWidget {
         Text('Bio-Stabilizer · v2.0', style: TextStyle(fontSize: 9, color: Colors.black54, letterSpacing: 0.8)),
       ]),
       const Spacer(),
+      IconButton(
+        icon: const Icon(Icons.logout, color: Colors.black54, size: 20),
+        onPressed: () => context.read<AuthService>().logout(),
+      ),
       IconButton(
         icon: const Icon(Icons.refresh, color: Colors.black54, size: 20),
         padding: EdgeInsets.zero,
@@ -410,13 +366,13 @@ class _ProfileCard extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(user['name'] ?? 'Prajwal', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E1E1E))),
+          Text(user['name'] ?? 'User', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E1E1E))),
           Text(user['role'] ?? '(Professional Gamer / ML Engineer)', style: TextStyle(fontSize: 12, color: Colors.black54)),
         ])),
       ]),
       const SizedBox(height: 24),
       Text(
-        "Good morning, ${user['name'] ?? 'Prajwal'}.\nHow's your bio-signal today?",
+        "Good morning, ${user['name'] ?? 'User'}.\nHow's your bio-signal today?",
         style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E1E1E), height: 1.2),
       ),
       const SizedBox(height: 20),
@@ -773,6 +729,24 @@ class _SettingsTab extends StatelessWidget {
           value: autoNavigate, onChanged: onAutoNavChanged,
           color: const Color(0xFF68D391),
         ),
+        _SettingTile(
+          icon: '🛡️', title: 'Guardian Contact',
+          subtitle: 'Update emergency contact number',
+          value: false, onChanged: (_) async {
+            final auth = context.read<AuthService>();
+            final ctrl = TextEditingController(text: auth.user?['guardian_phone'] ?? '');
+            final newG = await showDialog<String>(context: context, builder: (_) => AlertDialog(
+              title: const Text('Update Guardian Number'),
+              content: TextField(controller: ctrl, decoration: const InputDecoration(hintText: '+1234567890')),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                TextButton(onPressed: () => Navigator.pop(context, ctrl.text), child: const Text('Save')),
+              ],
+            ));
+            if (newG != null && newG.isNotEmpty) auth.updateGuardian(newG);
+          },
+          color: const Color(0xFFF6E05E),
+        ),
         const SizedBox(height: 20),
         Container(
           padding: const EdgeInsets.all(14),
@@ -782,9 +756,9 @@ class _SettingsTab extends StatelessWidget {
             const SizedBox(height: 8),
             Text('Backend: ${SocketService.backendUrl}', style: TextStyle(fontSize: 11, color: Colors.black87)),
             const SizedBox(height: 4),
-            Text('User: Prajwal (CGPA 9.0)', style: TextStyle(fontSize: 11, color: Colors.black54)),
+            Text('User: ${context.watch<AuthService>().user?['name'] ?? 'Prajwal'}', style: TextStyle(fontSize: 11, color: Colors.black54)),
             const SizedBox(height: 4),
-            Text('Twilio: +91 9110 687 983', style: TextStyle(fontSize: 11, color: Colors.black54)),
+            Text('Guardian: ${context.watch<AuthService>().user?['guardian_phone'] ?? 'Not set'}', style: TextStyle(fontSize: 11, color: Colors.black54)),
           ]),
         ),
       ],

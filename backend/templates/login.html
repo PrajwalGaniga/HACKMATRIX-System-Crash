@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aegis.ai | Access Command Center</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        :root {
+            --primary: #7FB77E;
+            --primary-hover: #96C894;
+            --bg-deep: #121412;
+            --surface: #1E201E;
+            --surface-light: #2A2C2A;
+            --text-main: #FFFFFF;
+            --text-sub: #A0A0A0;
+            --radius: 20px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            background: var(--surface);
+            padding: 40px;
+            border-radius: var(--radius);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--text-sub);
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+            background: var(--surface-light);
+            padding: 4px;
+            border-radius: 12px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: 0.3s ease;
+        }
+
+        .tab.active {
+            background: var(--primary);
+            color: var(--bg-deep);
+        }
+
+        .tab:not(.active) {
+            color: var(--text-sub);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 12px;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px;
+            background: var(--surface-light);
+            border: 1px solid transparent;
+            border-radius: 12px;
+            color: var(--text-main);
+            font-size: 14px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: var(--bg-deep);
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+        
+        #error-msg {
+            color: #ff6b6b;
+            font-size: 13px;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Aegis.ai</h1>
+            <p>Your mental resilience command center.</p>
+        </div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('login')">Sign In</div>
+            <div class="tab" onclick="switchTab('signup')">Sign Up</div>
+        </div>
+
+        <!-- LOGIN FORM -->
+        <form id="login-form" onsubmit="handleAuth(event, 'login')">
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="text" id="login-phone" placeholder="+1234567890" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="login-password" placeholder="••••••••" required>
+            </div>
+            <button class="btn" type="submit">Access System</button>
+            <div id="login-error" class="hidden" style="color:#ff6b6b;font-size:13px;margin-top:10px;text-align:center;"></div>
+        </form>
+
+        <!-- SIGNUP FORM -->
+        <form id="signup-form" class="hidden" onsubmit="handleAuth(event, 'signup')">
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" id="signup-name" placeholder="John Doe" required>
+            </div>
+            <div class="form-group">
+                <label>Phone Number</label>
+                <input type="text" id="signup-phone" placeholder="+1234567890" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="signup-password" placeholder="Create a password" required>
+            </div>
+            <div class="form-group">
+                <label>Guardian Phone (Optional)</label>
+                <input type="text" id="signup-guardian" placeholder="+1987654321">
+            </div>
+            <button class="btn" type="submit">Initialize Profile</button>
+            <div id="signup-error" class="hidden" style="color:#ff6b6b;font-size:13px;margin-top:10px;text-align:center;"></div>
+        </form>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.tab:contains('${tab === 'login' ? 'Sign In' : 'Sign Up'}')`)?.classList.add('active'); // Wait, doing it simple
+            
+            if(tab === 'login') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('login-form').classList.remove('hidden');
+                document.getElementById('signup-form').classList.add('hidden');
+            } else {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('signup-form').classList.remove('hidden');
+                document.getElementById('login-form').classList.add('hidden');
+            }
+        }
+
+        async function handleAuth(e, type) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const ogText = btn.innerText;
+            btn.innerText = 'Processing...';
+            btn.disabled = true;
+
+            const endpoint = type === 'login' ? '/api/login' : '/api/signup';
+            let payload = {};
+
+            if (type === 'login') {
+                payload = {
+                    phone: document.getElementById('login-phone').value,
+                    password: document.getElementById('login-password').value
+                };
+            } else {
+                payload = {
+                    name: document.getElementById('signup-name').value,
+                    phone: document.getElementById('signup-phone').value,
+                    password: document.getElementById('signup-password').value,
+                    guardian_phone: document.getElementById('signup-guardian').value
+                };
+            }
+
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    throw new Error(data.detail || data.error || 'Authentication failed');
+                }
+
+                // Save token
+                localStorage.setItem('aegis_token', data.access_token);
+                window.location.href = '/dashboard';
+                
+            } catch (err) {
+                const errDiv = document.getElementById(`${type}-error`);
+                errDiv.innerText = err.message;
+                errDiv.classList.remove('hidden');
+            } finally {
+                btn.innerText = ogText;
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

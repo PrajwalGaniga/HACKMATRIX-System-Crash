@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aegis.ai | Command Center</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        :root {
+            --primary: #7FB77E;
+            --primary-hover: #96C894;
+            --bg-deep: #121412;
+            --surface: #1E201E;
+            --surface-light: #2A2C2A;
+            --text-main: #FFFFFF;
+            --text-sub: #A0A0A0;
+            --radius: 20px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            min-height: 100vh;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--surface-light);
+        }
+
+        .navbar h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .btn-outline {
+            padding: 8px 16px;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            background: transparent;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: 0.3s;
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: var(--bg-deep);
+        }
+
+        .container {
+            padding: 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .card h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* User Profile Sidebar */
+        .profile-card {
+            text-align: center;
+        }
+
+        .avatar {
+            width: 100px;
+            height: 100px;
+            background: var(--surface-light);
+            border-radius: 50%;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: var(--primary);
+        }
+
+        .profile-card h3 {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        .profile-card p {
+            color: var(--text-sub);
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: var(--surface-light);
+            padding: 16px;
+            border-radius: 16px;
+            text-align: center;
+        }
+
+        .stat-box h4 {
+            font-size: 24px;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .stat-box span {
+            font-size: 12px;
+            color: var(--text-sub);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--surface-light);
+            font-size: 14px;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        /* Main Content */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .charts-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        /* Logs Table */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 16px;
+            border-bottom: 1px solid var(--surface-light);
+        }
+
+        th {
+            color: var(--text-sub);
+            font-weight: 500;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            font-size: 14px;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge.HIGH {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+        }
+
+        .badge.ELEVATED {
+            background: rgba(255, 179, 71, 0.2);
+            color: #ffb347;
+        }
+
+        .badge.STABLE {
+            background: rgba(127, 183, 126, 0.2);
+            color: var(--primary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="navbar">
+        <h1>Aegis.ai</h1>
+        <div class="nav-right">
+            <span id="nav-user-name" style="color: var(--text-sub);">Loading...</span>
+            <button class="btn-outline" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="card profile-card">
+            <div class="avatar" id="avatar-initial">?</div>
+            <h3 id="user-name">User Name</h3>
+            <p id="user-role">Role</p>
+
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <h4 id="stat-score">0</h4>
+                    <span>Recovery Score</span>
+                </div>
+                <div class="stat-box">
+                    <h4 id="stat-avoided">0</h4>
+                    <span>Tilts Avoided</span>
+                </div>
+            </div>
+
+            <div class="info-row">
+                <span style="color: var(--text-sub);">Phone</span>
+                <span id="user-phone">-</span>
+            </div>
+            <div class="info-row">
+                <span style="color: var(--text-sub);">Guardian Phone</span>
+                <span id="user-guardian">-</span>
+            </div>
+        </div>
+
+        <!-- Main Dashboard -->
+        <div class="main-content">
+            <div class="charts-row">
+                <div class="card">
+                    <h2>Weekly Recovery Trends</h2>
+                    <div class="chart-container">
+                        <canvas id="recoveryChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h2>Live Blink Consistency</h2>
+                    <div class="chart-container">
+                        <canvas id="blinkChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Intervention Logs</h2>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>App / Context</th>
+                                <th>Stress Level</th>
+                                <th>Action Taken</th>
+                                <th>Guardian Called</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logs-body">
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: var(--text-sub);">Loading logs...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check Auth
+        const token = localStorage.getItem('aegis_token');
+        if (!token) {
+            window.location.href = '/login';
+        }
+
+        // Fetch User Data
+        async function fetchUserData() {
+            try {
+                const res = await fetch('/api/user', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) {
+                    if (res.status === 401) window.location.href = '/login';
+                    throw new Error('Failed to fetch user');
+                }
+                const user = await res.json();
+
+                document.getElementById('nav-user-name').innerText = user.name;
+                document.getElementById('user-name').innerText = user.name;
+                document.getElementById('avatar-initial').innerText = user.name.charAt(0).toUpperCase();
+                document.getElementById('user-role').innerText = user.role || 'Gamer / Engineer';
+                document.getElementById('stat-score').innerText = user.recovery_score || 85;
+                document.getElementById('stat-avoided').innerText = user.tilt_events_avoided || 0;
+                document.getElementById('user-phone').innerText = user.phone || 'N/A';
+                document.getElementById('user-guardian').innerText = user.guardian_phone || 'None Set';
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Fetch Logs
+        async function fetchLogs() {
+            try {
+                const res = await fetch('/api/interventions', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                const tbody = document.getElementById('logs-body');
+                tbody.innerHTML = '';
+
+                if (data.interventions && data.interventions.length > 0) {
+                    data.interventions.forEach(log => {
+                        const date = new Date(log.timestamp).toLocaleString();
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${date}</td>
+                            <td>${log.active_app || 'N/A'}</td>
+                            <td><span class="badge ${log.stress_level || 'STABLE'}">${log.stress_level || 'STABLE'}</span></td>
+                            <td>${log.action || 'NONE'}</td>
+                            <td>${log.twilio_called ? 'Yes' : 'No'}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-sub);">No interventions logged yet.</td></tr>';
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('aegis_token');
+            window.location.href = '/login';
+        }
+
+        // Initialize Charts with dummy data for "Weekly Progress"
+        function initCharts() {
+            Chart.defaults.color = '#A0A0A0';
+            Chart.defaults.font.family = 'Inter';
+
+            // Recovery Chart
+            const ctxRecovery = document.getElementById('recoveryChart').getContext('2d');
+            new Chart(ctxRecovery, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Recovery Score',
+                        data: [75, 78, 80, 76, 82, 85, 87],
+                        borderColor: '#7FB77E',
+                        backgroundColor: 'rgba(127, 183, 126, 0.2)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { min: 50, max: 100, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // Blink Chart
+            const ctxBlink = document.getElementById('blinkChart').getContext('2d');
+            new Chart(ctxBlink, {
+                type: 'bar',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Avg Blinks/min',
+                        data: [12, 14, 15, 13, 11, 15, 16],
+                        backgroundColor: '#7FB77E',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { min: 0, max: 25, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // Load data
+        fetchUserData();
+        fetchLogs();
+        initCharts();
+    </script>
+</body>
+
+</html>

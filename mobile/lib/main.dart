@@ -4,15 +4,21 @@ import 'package:google_fonts/google_fonts.dart';
 import 'services/socket_service.dart';
 import 'services/sensor_service.dart';
 import 'services/haptic_service.dart';
+import 'services/auth_service.dart';
 import 'screens/home_screen.dart';
+import 'screens/auth_screen.dart';
 import 'screens/intervention_hub.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await HapticService.init();
+  final authService = AuthService();
+  await authService.init();
+  
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider.value(value: authService),
         ChangeNotifierProvider(create: (_) => SocketService()),
         ChangeNotifierProvider(create: (_) => SensorService()),
       ],
@@ -72,7 +78,11 @@ class _AegisAppState extends State<AegisApp> {
         ),
         textTheme: GoogleFonts.outfitTextTheme(ThemeData.light().textTheme),
       ),
-      home: const HomeScreen(),
+      home: Consumer<AuthService>(
+        builder: (context, auth, _) {
+          return auth.isAuthenticated ? const HomeScreen() : const AuthScreen();
+        },
+      ),
     );
   }
 }
