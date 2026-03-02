@@ -1,0 +1,43 @@
+name: aegis_flutter
+description: Aegis.ai — Real-time mental resilience app for esports athletes.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Networking & real-time
+  socket_io_client: ^2.0.3+1
+  http: ^1.2.1
+
+  # Sensors & haptics
+  sensors_plus: ^5.0.1
+  vibration: ^2.0.0
+
+  # Charts & analytics
+  fl_chart: ^0.69.0
+
+  # State management
+  provider: ^6.1.2
+
+  # Date formatting for call log
+  intl: ^0.19.0
+
+  # Permissions
+  permission_handler: ^11.3.1
+
+  # UI
+  google_fonts: ^6.2.1
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true

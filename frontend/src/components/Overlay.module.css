@@ -1,0 +1,103 @@
+/* ── Overlay sits above everything, pointer-events: none ── */
+.overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    background: transparent;
+    transition: background 1.5s ease;
+}
+
+.overlay.amberActive {
+    background: rgba(255, 191, 0, 0.18);
+}
+
+.overlay.elevatedActive {
+    background: rgba(255, 140, 0, 0.08);
+}
+
+/* ── Inner indicator badge (top-right corner) ─────────── */
+.badge {
+    position: absolute;
+    top: 80px;
+    right: 24px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.badge.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.badge.amberBadge {
+    background: rgba(255, 191, 0, 0.15);
+    border: 1px solid rgba(255, 191, 0, 0.4);
+    color: #ffbf00;
+    box-shadow: 0 0 20px rgba(255, 191, 0, 0.2);
+}
+
+.badge.elevatedBadge {
+    background: rgba(246, 173, 85, 0.1);
+    border: 1px solid rgba(246, 173, 85, 0.3);
+    color: var(--accent-amber);
+}
+
+.badgeDot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: blink 1s ease-in-out infinite;
+}
+
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.2;
+    }
+}
+
+/* ── Vignette pulse at edges during high-tilt ─────────── */
+.vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(255, 130, 0, 0) 100%);
+    opacity: 0;
+    transition: opacity 2s ease;
+}
+
+.vignette.amberVignette {
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(255, 150, 0, 0.15) 100%);
+    opacity: 1;
+    animation: vignetteBreath 3s ease-in-out infinite;
+}
+
+@keyframes vignetteBreath {
+
+    0%,
+    100% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}

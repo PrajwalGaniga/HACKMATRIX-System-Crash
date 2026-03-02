@@ -1,0 +1,185 @@
+.statusBar {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    backdrop-filter: blur(8px);
+    box-shadow: var(--shadow-card);
+    transition: border-color 0.4s ease;
+}
+
+.statusBar.high {
+    border-color: rgba(255, 107, 53, 0.4);
+    box-shadow: 0 0 30px rgba(255, 107, 53, 0.1);
+}
+
+.statusBar.elevated {
+    border-color: rgba(246, 173, 85, 0.35);
+}
+
+.statusBar.stable {
+    border-color: rgba(104, 211, 145, 0.2);
+}
+
+/* ── Header ───────────────────────────────────────────── */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.titleIcon {
+    font-size: 1.1rem;
+}
+
+.titleText {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+}
+
+/* ── Stress level chip ────────────────────────────────── */
+.levelChip {
+    padding: 4px 14px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    letter-spacing: 0.5px;
+    border: 1px solid;
+    transition: all 0.4s ease;
+}
+
+.levelChip.high {
+    background: rgba(255, 107, 53, 0.12);
+    border-color: rgba(255, 107, 53, 0.4);
+    color: #ff6b35;
+    box-shadow: 0 0 12px rgba(255, 107, 53, 0.2);
+    animation: chipPulse 1.5s ease-in-out infinite;
+}
+
+.levelChip.elevated {
+    background: rgba(246, 173, 85, 0.1);
+    border-color: rgba(246, 173, 85, 0.35);
+    color: var(--accent-amber);
+}
+
+.levelChip.stable {
+    background: rgba(104, 211, 145, 0.08);
+    border-color: rgba(104, 211, 145, 0.25);
+    color: var(--accent-green);
+}
+
+.levelChip.idle {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: var(--border-subtle);
+    color: var(--text-muted);
+}
+
+@keyframes chipPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 8px rgba(255, 107, 53, 0.2);
+    }
+
+    50% {
+        box-shadow: 0 0 20px rgba(255, 107, 53, 0.5);
+    }
+}
+
+/* ── AU Readings grid ─────────────────────────────────── */
+.readings {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.reading {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.readingLabel {
+    font-size: 0.6rem;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+}
+
+.readingValue {
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--accent-cyan);
+}
+
+.readingValue.danger {
+    color: var(--accent-red);
+}
+
+.readingValue.warn {
+    color: var(--accent-amber);
+}
+
+.readingValue.ok {
+    color: var(--accent-green);
+}
+
+/* ── Reasoning text ───────────────────────────────────── */
+.reasoning {
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--accent-cyan);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    transition: border-left-color 0.4s ease;
+}
+
+.reasoning.high {
+    border-left-color: #ff6b35;
+}
+
+.reasoning.elevated {
+    border-left-color: var(--accent-amber);
+}
+
+.reasoning.stable {
+    border-left-color: var(--accent-green);
+}
+
+.tip {
+    margin-top: 8px;
+    font-style: italic;
+    color: var(--accent-cyan);
+    font-size: 0.7rem;
+}
+
+/* ── Idle state ───────────────────────────────────────── */
+.idle {
+    text-align: center;
+    padding: 20px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}

@@ -1,0 +1,238 @@
+.controls {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    backdrop-filter: blur(8px);
+    box-shadow: var(--shadow-card);
+}
+
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 16px;
+}
+
+.sectionIcon {
+    font-size: 1.2rem;
+}
+
+.sectionTitle {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+}
+
+/* ── AU Input Group ───────────────────────────────────── */
+.auGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.auRow {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.auLabelRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.auLabel {
+    font-size: 0.7rem;
+    font-family: var(--font-mono);
+    color: var(--text-secondary);
+}
+
+.auValue {
+    font-size: 0.7rem;
+    font-family: var(--font-mono);
+    color: var(--accent-cyan);
+    font-weight: 600;
+}
+
+.slider {
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border-subtle);
+    outline: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent-cyan);
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(118, 228, 247, 0.5);
+    transition: transform 0.15s ease;
+}
+
+.slider::-webkit-slider-thumb:hover {
+    transform: scale(1.3);
+}
+
+/* ── Buttons ──────────────────────────────────────────── */
+.buttonGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.btnStress {
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    font-weight: 700;
+    font-family: var(--font-body);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    letter-spacing: 0.3px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(255, 107, 53, 0.35);
+}
+
+.btnStress:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(255, 107, 53, 0.5);
+}
+
+.btnStress:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.btnStress:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Ripple shimmer */
+.btnStress::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.4s ease;
+}
+
+.btnStress:hover::before {
+    transform: translateX(100%);
+}
+
+.btnReset {
+    width: 100%;
+    padding: 12px 20px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-family: var(--font-body);
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btnReset:hover:not(:disabled) {
+    background: var(--bg-card-hover);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: var(--text-primary);
+}
+
+.btnReset:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.btnSend {
+    width: 100%;
+    padding: 12px 20px;
+    border: 1px solid rgba(99, 179, 237, 0.25);
+    border-radius: var(--radius-md);
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-family: var(--font-body);
+    cursor: pointer;
+    background: rgba(99, 179, 237, 0.08);
+    color: var(--accent-blue);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btnSend:hover:not(:disabled) {
+    background: rgba(99, 179, 237, 0.15);
+    border-color: rgba(99, 179, 237, 0.4);
+}
+
+.btnSend:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* ── Status feedback ──────────────────────────────────── */
+.feedback {
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    border: 1px solid;
+    animation: feedbackIn 0.3s ease;
+}
+
+.feedback.success {
+    background: rgba(104, 211, 145, 0.08);
+    border-color: rgba(104, 211, 145, 0.25);
+    color: var(--accent-green);
+}
+
+.feedback.error {
+    background: rgba(252, 129, 129, 0.08);
+    border-color: rgba(252, 129, 129, 0.2);
+    color: var(--accent-red);
+}
+
+@keyframes feedbackIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
