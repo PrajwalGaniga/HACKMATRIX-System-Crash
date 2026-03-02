@@ -11,6 +11,7 @@ import '../services/haptic_service.dart';
 import '../models/intervention_model.dart';
 import '../widgets/recovery_chart.dart';
 import 'intervention_hub.dart';
+import 'tilt_warning_screen.dart';
 import 'game_shake.dart';
 import 'game_neon_trace.dart';
 import 'game_bubble_pop.dart';
@@ -43,10 +44,23 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _fetchUser();
     _startAccel();
-    // Wire in-app notification banner
+    // Wire notification callbacks after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<SocketService>().onElevated = _showInAppBanner;
+      final svc = context.read<SocketService>();
+      svc.onElevated = _showInAppBanner;
+      svc.onHighTilt = _showTiltWarning;
     });
+  }
+
+  /// Shows the full-screen Glassmorphism Tilt Warning as a modal dialog
+  void _showTiltWarning(InterventionModel model) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: 0.7),
+      builder: (_) => TiltWarningScreen(model: model),
+    );
   }
 
   Future<void> _fetchUser() async {
@@ -93,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final socket = context.watch<SocketService>();
     return Scaffold(
-      backgroundColor: const Color(0xFF080B14),
+      backgroundColor: const Color(0xFFE8F5E9),
       body: SafeArea(
         child: Column(children: [
           _Navbar(socket: socket),
@@ -135,24 +149,34 @@ class _Navbar extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
     decoration: const BoxDecoration(
-      color: Color(0xFF080B14),
-      border: Border(bottom: BorderSide(color: Color(0x12FFFFFF))),
+      color: Color(0xFFE8F5E9),
+      border: Border(bottom: BorderSide(color: Color(0x12000000))),
     ),
     child: Row(children: [
       Container(
         width: 34, height: 34,
         decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [Color(0xFF63B3ED), Color(0xFFB794F4)]),
+          gradient: const LinearGradient(colors: [Color(0xFFFFB6C1), Color(0xFFFFCCDD)]), // Pastel pink gradient
           borderRadius: BorderRadius.circular(9),
         ),
-        child: const Center(child: Text('🛡️', style: TextStyle(fontSize: 16))),
+        child: const Center(child: Text('🧠', style: TextStyle(fontSize: 16))),
       ),
       const SizedBox(width: 10),
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Aegis.ai', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white)),
-        Text('Bio-Stabilizer · v2.0', style: TextStyle(fontSize: 9, color: Colors.grey[600], letterSpacing: 0.8)),
+        const Text('Aegis.ai', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF1E1E1E))),
+        Text('Bio-Stabilizer · v2.0', style: TextStyle(fontSize: 9, color: Colors.black54, letterSpacing: 0.8)),
       ]),
       const Spacer(),
+      IconButton(
+        icon: const Icon(Icons.refresh, color: Colors.black54, size: 20),
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
+        onPressed: () {
+          HapticService.successTap();
+          socket.forceReconnect();
+        },
+      ),
+      const SizedBox(width: 12),
       _ConnDot(connected: socket.connected),
     ]),
   );
@@ -163,18 +187,18 @@ class _ConnDot extends StatelessWidget {
   const _ConnDot({required this.connected});
   @override
   Widget build(BuildContext context) {
-    final c = connected ? const Color(0xFF68D391) : Colors.redAccent;
+    final c = connected ? const Color(0xFF4ADE80) : Colors.redAccent;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: c.withValues(alpha: 0.1),
+        color: c.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: c.withValues(alpha: 0.3)),
       ),
       child: Row(children: [
         Container(width: 6, height: 6, decoration: BoxDecoration(shape: BoxShape.circle, color: c)),
         const SizedBox(width: 5),
-        Text(connected ? 'Live' : 'Off', style: TextStyle(fontSize: 10, color: c, fontFamily: 'monospace')),
+        Text(connected ? 'Live' : 'Off', style: TextStyle(fontSize: 10, color: c, fontWeight: FontWeight.bold, fontFamily: 'monospace')),
       ]),
     );
   }
@@ -198,7 +222,7 @@ class _InAppBanner extends StatelessWidget {
         margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: color.withValues(alpha: 0.35)),
           boxShadow: [BoxShadow(color: color.withValues(alpha: 0.12), blurRadius: 16)],
@@ -213,13 +237,13 @@ class _InAppBanner extends StatelessWidget {
             ),
             Text(
               intervention.toastMsg.isNotEmpty ? intervention.toastMsg : intervention.interventionTip,
-              style: TextStyle(fontSize: 12, color: Colors.grey[300]),
+              style: TextStyle(fontSize: 12, color: Colors.black87),
               maxLines: 2, overflow: TextOverflow.ellipsis,
             ),
             if (intervention.breathingTip.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: Text('💨 ${intervention.breathingTip}', style: const TextStyle(fontSize: 10, color: Color(0xFF76E4F7))),
+                child: Text('💨 ${intervention.breathingTip}', style: TextStyle(fontSize: 10, color: Colors.blueGrey[700])),
               ),
           ])),
           const SizedBox(width: 8),
@@ -307,33 +331,33 @@ class _StressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final level = intervention?.stressLevel ?? 'IDLE';
-    final color = level == 'HIGH' ? Colors.redAccent : level == 'ELEVATED' ? const Color(0xFFF6AD55) : level == 'STABLE' ? const Color(0xFF68D391) : Colors.grey;
+    final color = level == 'HIGH' ? Colors.redAccent : level == 'ELEVATED' ? const Color(0xFFF6AD55) : level == 'STABLE' ? const Color(0xFF4ADE80) : Colors.grey;
     return Container(
       width: double.infinity, padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-        boxShadow: [BoxShadow(color: color.withValues(alpha: 0.07), blurRadius: 18)],
+        color: Colors.white, borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+        boxShadow: [BoxShadow(color: color.withValues(alpha: 0.08), blurRadius: 18, offset: const Offset(0, 4))],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           const Text('🧠', style: TextStyle(fontSize: 16)),
           const SizedBox(width: 8),
-          Text('Gemini Cognitive Engine', style: TextStyle(fontSize: 10, color: Colors.grey[500], fontFamily: 'monospace', letterSpacing: 0.6)),
+          Text('Gemini Cognitive Engine', style: TextStyle(fontSize: 11, color: Colors.black87, fontWeight: FontWeight.w600, letterSpacing: 0.3)),
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
             decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(999), border: Border.all(color: color.withValues(alpha: 0.4))),
-            child: Text(level, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: color, fontFamily: 'monospace')),
+            child: Text(level, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: color, fontFamily: 'monospace')),
           ),
         ]),
         const SizedBox(height: 10),
         if (intervention?.reasoning.isNotEmpty == true) ...[
-          Text(intervention!.reasoning, style: TextStyle(fontSize: 12, color: Colors.grey[300])),
+          Text(intervention!.reasoning, style: TextStyle(fontSize: 12, color: Colors.black87)),
           const SizedBox(height: 5),
-          Text('"${intervention!.interventionTip}"', style: const TextStyle(fontSize: 11, color: Color(0xFF76E4F7), fontStyle: FontStyle.italic)),
+          Text('"${intervention!.interventionTip}"', style: TextStyle(fontSize: 11, color: Colors.blueGrey[700], fontStyle: FontStyle.italic)),
         ] else
-          Text('Monitoring… awaiting biosignals', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+          Text('Monitoring… awaiting biosignals', style: TextStyle(fontSize: 12, color: Colors.black54)),
       ]),
     );
   }
@@ -368,27 +392,40 @@ class _ProfileCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.white.withValues(alpha: 0.07))),
+    decoration: BoxDecoration(
+      color: Colors.transparent, 
+    ),
     child: Column(children: [
       Row(children: [
         Container(
           width: 48, height: 48,
-          decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF63B3ED), Color(0xFFB794F4)]), borderRadius: BorderRadius.circular(12)),
-          child: const Center(child: Text('🎮', style: TextStyle(fontSize: 22))),
+          decoration: BoxDecoration(
+            color: Colors.black12,
+            image: const DecorationImage(
+              image: NetworkImage('https://i.pravatar.cc/150?img=32'),
+              fit: BoxFit.cover,
+            ),
+            borderRadius: BorderRadius.circular(24)
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(user['name'] ?? 'Prajwal', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white)),
-          Text(user['role'] ?? 'ML Engineer / Pro Gamer', style: TextStyle(fontSize: 10, color: Colors.grey[500])),
+          Text(user['name'] ?? 'Prajwal', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E1E1E))),
+          Text(user['role'] ?? '(Professional Gamer / ML Engineer)', style: TextStyle(fontSize: 12, color: Colors.black54)),
         ])),
       ]),
-      const SizedBox(height: 14),
+      const SizedBox(height: 24),
+      Text(
+        "Good morning, ${user['name'] ?? 'Prajwal'}.\nHow's your bio-signal today?",
+        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E1E1E), height: 1.2),
+      ),
+      const SizedBox(height: 20),
       Row(children: [
-        _Stat('CGPA', '${user['cgpa'] ?? 9.0}', const Color(0xFF63B3ED)),
-        const SizedBox(width: 8),
-        _Stat('Recovery', '${user['recovery_score'] ?? 87}%', const Color(0xFF68D391)),
-        const SizedBox(width: 8),
-        _Stat('Tilt Saved', '${user['tilt_events_avoided'] ?? 12}', const Color(0xFFB794F4)),
+        _Stat('CGPA', '${user['cgpa'] ?? 9.0}', const Color(0xFF90CDF4)),
+        const SizedBox(width: 12),
+        _Stat('Recovery', '${user['recovery_score'] ?? 87}%', const Color(0xFF9AE6B4)),
+        const SizedBox(width: 12),
+        _Stat('Tilt Saved', '${user['tilt_events_avoided'] ?? 26}', const Color(0xFFD6BCFA)),
       ]),
     ]),
   );
@@ -399,12 +436,16 @@ class _Stat extends StatelessWidget {
   const _Stat(this.label, this.value, this.color);
   @override
   Widget build(BuildContext context) => Expanded(child: Container(
-    padding: const EdgeInsets.all(10),
-    decoration: BoxDecoration(color: color.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(9), border: Border.all(color: color.withValues(alpha: 0.2))),
+    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.6), 
+      borderRadius: BorderRadius.circular(12), 
+      border: Border.all(color: Colors.black12)
+    ),
     child: Column(children: [
-      Text(label, style: TextStyle(fontSize: 9, color: Colors.grey[500], fontFamily: 'monospace')),
-      const SizedBox(height: 3),
-      Text(value, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: color)),
+      Text(label, style: const TextStyle(fontSize: 11, color: Colors.black87, fontWeight: FontWeight.w600)),
+      const SizedBox(height: 4),
+      Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.black)),
     ]),
   ));
 }
@@ -414,22 +455,27 @@ class _AccelCard extends StatelessWidget {
   const _AccelCard({required this.intensity});
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.white.withValues(alpha: 0.07))),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white, 
+      borderRadius: BorderRadius.circular(14), 
+      border: Border.all(color: Colors.black12),
+      boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
+    ),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('📡  Accelerometer · HAR Stream', style: TextStyle(fontSize: 10, color: Colors.grey[500], fontFamily: 'monospace')),
-      const SizedBox(height: 10),
+      Text('📡  Accelerometer | HAR Stream', style: TextStyle(fontSize: 12, color: Colors.blueGrey[800], fontWeight: FontWeight.bold)),
+      const SizedBox(height: 12),
       ClipRRect(
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(6),
         child: LinearProgressIndicator(
           value: intensity / 20,
-          backgroundColor: Colors.white.withValues(alpha: 0.05),
-          valueColor: AlwaysStoppedAnimation(intensity > 12 ? Colors.redAccent : intensity > 6 ? const Color(0xFFF6AD55) : const Color(0xFF63B3ED)),
-          minHeight: 7,
+          backgroundColor: Colors.grey[200],
+          valueColor: AlwaysStoppedAnimation(intensity > 12 ? Colors.redAccent : intensity > 6 ? const Color(0xFFF6AD55) : const Color(0xFF81E6D9)),
+          minHeight: 10,
         ),
       ),
-      const SizedBox(height: 5),
-      Text('${intensity.toStringAsFixed(1)} m/s²   ${intensity > 12 ? "HIGH MOTION" : intensity > 6 ? "Moderate" : "Stable"}', style: TextStyle(fontSize: 9, color: Colors.grey[600], fontFamily: 'monospace')),
+      const SizedBox(height: 8),
+      Text('${intensity.toStringAsFixed(1)} m/s²   ${intensity > 12 ? "HIGH MOTION" : intensity > 6 ? "Moderate" : "Stable"}', style: TextStyle(fontSize: 11, color: Colors.black54, fontWeight: FontWeight.w600)),
     ]),
   );
 }
@@ -463,9 +509,9 @@ class _GamesTab extends StatelessWidget {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('🎮  Stress Relief Games', style: TextStyle(fontSize: 12, color: Colors.grey[500], fontFamily: 'monospace', letterSpacing: 1)),
+        Text('🎮  Stress Relief Games', style: TextStyle(fontSize: 14, color: Colors.blueGrey[800], fontWeight: FontWeight.bold, letterSpacing: 1)),
         const SizedBox(height: 4),
-        Text('No scores. No levels. Just relief.', style: TextStyle(fontSize: 11, color: Colors.grey[700])),
+        Text('No scores. No levels. Just relief.', style: TextStyle(fontSize: 11, color: Colors.black87)),
         const SizedBox(height: 16),
         _GameCard(
           emoji: '🫧', title: 'Virtual Bubble Wrap Simulator',
@@ -548,25 +594,25 @@ class _GameCard extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.06),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Row(children: [
         Container(
           width: 52, height: 52,
-          decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+          decoration: BoxDecoration(color: color.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(12)),
           child: Center(child: Text(emoji, style: const TextStyle(fontSize: 26))),
         ),
         const SizedBox(width: 14),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: color)),
+          Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.black87)),
           const SizedBox(height: 3),
-          Text(subtitle, style: TextStyle(fontSize: 10, color: Colors.grey[400], height: 1.4)),
+          Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.black87, height: 1.4)),
           const SizedBox(height: 5),
-          Text('Why: $why', style: TextStyle(fontSize: 9, color: Colors.grey[600], fontStyle: FontStyle.italic, height: 1.3)),
+          Text('Why: $why', style: TextStyle(fontSize: 10, color: Colors.blueGrey[700], fontStyle: FontStyle.italic, height: 1.3)),
         ])),
-        Icon(Icons.arrow_forward_ios_rounded, color: color.withValues(alpha: 0.5), size: 14),
+        Icon(Icons.arrow_forward_ios_rounded, color: Colors.black54, size: 14),
       ]),
     ),
   );
@@ -587,10 +633,10 @@ class _LogsTab extends StatelessWidget {
       child: Column(children: [
         TabBar(
           tabs: const [Tab(text: '📋  Interventions'), Tab(text: '📞  Call Log')],
-          labelStyle: const TextStyle(fontSize: 11, fontFamily: 'monospace', fontWeight: FontWeight.w600),
-          indicatorColor: const Color(0xFF63B3ED),
-          labelColor: const Color(0xFF63B3ED),
-          unselectedLabelColor: Colors.grey,
+          labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          indicatorColor: const Color(0xFF1E1E1E),
+          labelColor: const Color(0xFF1E1E1E),
+          unselectedLabelColor: Colors.black54,
         ),
         Expanded(
           child: TabBarView(children: [
@@ -620,31 +666,31 @@ class _InterventionList extends StatelessWidget {
         final color = h.isHigh ? Colors.redAccent : h.isElevated ? const Color(0xFFF6AD55) : const Color(0xFF68D391);
         return Container(
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withValues(alpha: 0.2))),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withValues(alpha: 0.3))),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('${h.toastEmoji} ${h.stressLevel} — ${h.action}', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color, fontFamily: 'monospace')),
+                Text('${h.toastEmoji} ${h.stressLevel} — ${h.action}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: color, fontFamily: 'monospace')),
                 const SizedBox(height: 2),
-                Text(DateFormat('MMM d, h:mm a').format(h.timestamp), style: TextStyle(fontSize: 9, color: Colors.grey[600], fontFamily: 'monospace')),
+                Text(DateFormat('MMM d, h:mm a').format(h.timestamp), style: TextStyle(fontSize: 10, color: Colors.black54, fontWeight: FontWeight.w600)),
               ])),
-              if (h.triggerCall) const Text('📞 Called', style: TextStyle(fontSize: 9, color: Color(0xFF76E4F7))),
+              if (h.triggerCall) const Text('📞 Called', style: TextStyle(fontSize: 10, color: Colors.teal, fontWeight: FontWeight.bold)),
             ]),
             if (h.gameId != null && h.gameId!.isNotEmpty) ...[
-              const SizedBox(height: 2),
-              Text('🎮 Game: ${h.gameId!.replaceAll('_', ' ')}', style: TextStyle(fontSize: 9, color: Colors.grey[600], fontFamily: 'monospace')),
+              const SizedBox(height: 4),
+              Text('🎮 Game: ${h.gameId!.replaceAll('_', ' ')}', style: TextStyle(fontSize: 10, color: Colors.blueGrey[700], fontWeight: FontWeight.w600)),
             ],
             if (h.toastMsg.isNotEmpty) Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text('"${h.toastMsg}"', style: TextStyle(fontSize: 11, color: Colors.grey[400], fontStyle: FontStyle.italic)),
+              padding: const EdgeInsets.only(top: 6),
+              child: Text('"${h.toastMsg}"', style: TextStyle(fontSize: 12, color: Colors.black87, fontStyle: FontStyle.italic)),
             ),
             if (h.breathingTip.isNotEmpty) Padding(
-              padding: const EdgeInsets.only(top: 3),
-              child: Text('💨 ${h.breathingTip}', style: TextStyle(fontSize: 9, color: const Color(0xFF76E4F7).withValues(alpha: 0.8))),
+              padding: const EdgeInsets.only(top: 4),
+              child: Text('💨 ${h.breathingTip}', style: TextStyle(fontSize: 10, color: Colors.blueGrey[800], fontWeight: FontWeight.w500)),
             ),
             if (h.activeApp.isNotEmpty) Padding(
-              padding: const EdgeInsets.only(top: 3),
-              child: Text('📍 ${h.activeApp}', style: TextStyle(fontSize: 9, color: Colors.grey[600])),
+              padding: const EdgeInsets.only(top: 4),
+              child: Text('📍 ${h.activeApp}', style: TextStyle(fontSize: 10, color: Colors.black54, fontWeight: FontWeight.w500)),
             ),
           ]),
         );
@@ -670,21 +716,21 @@ class _CallHistory extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF76E4F7).withValues(alpha: 0.2)),
+            color: Colors.white, borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.black12),
           ),
           child: Row(children: [
             Container(
               width: 36, height: 36,
-              decoration: BoxDecoration(color: const Color(0xFF76E4F7).withValues(alpha: 0.08), shape: BoxShape.circle),
+              decoration: BoxDecoration(color: const Color(0xFFE8F5E9), shape: BoxShape.circle),
               child: const Center(child: Text('📞', style: TextStyle(fontSize: 18))),
             ),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('+91 9110 687 983', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
-              Text('Polly.Joanna · ${c['status'] ?? 'initiated'}', style: TextStyle(fontSize: 10, color: Colors.grey[500])),
+              Text('+91 9110 687 983', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1E1E1E))),
+              Text('Polly.Joanna · ${c['status'] ?? 'initiated'}', style: TextStyle(fontSize: 11, color: Colors.black54, fontWeight: FontWeight.w500)),
             ])),
-            Text(c['time'] ?? '', style: TextStyle(fontSize: 9, color: Colors.grey[600], fontFamily: 'monospace')),
+            Text(c['time'] ?? '', style: TextStyle(fontSize: 10, color: Colors.blueGrey[600], fontWeight: FontWeight.bold)),
           ]),
         );
       },
@@ -707,10 +753,10 @@ class _SettingsTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text('⚙️  Settings', style: TextStyle(fontSize: 12, color: Colors.grey[500], fontFamily: 'monospace', letterSpacing: 1)),
+        Text('⚙️  Settings', style: TextStyle(fontSize: 14, color: Colors.blueGrey[800], fontWeight: FontWeight.bold, letterSpacing: 1)),
         const SizedBox(height: 14),
         _SettingTile(
-          icon: '🔔', title: 'In-App Notifications',
+          icon: '🔔', title: 'Notifications',
           subtitle: 'Show banner alerts when stress is detected',
           value: notifEnabled, onChanged: onNotifChanged,
           color: const Color(0xFFF6AD55),
@@ -722,7 +768,7 @@ class _SettingsTab extends StatelessWidget {
           color: const Color(0xFF63B3ED),
         ),
         _SettingTile(
-          icon: '🚀', title: 'Auto-Navigate to Game',
+          icon: '🚀', title: 'Auto-Navigate',
           subtitle: 'Open game screen automatically on HIGH tilt signal',
           value: autoNavigate, onChanged: onAutoNavChanged,
           color: const Color(0xFF68D391),
@@ -730,15 +776,15 @@ class _SettingsTab extends StatelessWidget {
         const SizedBox(height: 20),
         Container(
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white.withValues(alpha: 0.07))),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.black12)),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('ℹ️  Connection Info', style: TextStyle(fontSize: 11, color: Colors.grey[500], fontFamily: 'monospace')),
+            Text('ℹ️  Connection Info', style: TextStyle(fontSize: 12, color: Colors.blueGrey[800], fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            Text('Backend: ${SocketService.backendUrl}', style: TextStyle(fontSize: 11, color: const Color(0xFF76E4F7), fontFamily: 'monospace')),
+            Text('Backend: ${SocketService.backendUrl}', style: TextStyle(fontSize: 11, color: Colors.black87)),
             const SizedBox(height: 4),
-            Text('User: Prajwal (CGPA 9.0)', style: TextStyle(fontSize: 11, color: Colors.grey[400], fontFamily: 'monospace')),
+            Text('User: Prajwal (CGPA 9.0)', style: TextStyle(fontSize: 11, color: Colors.black54)),
             const SizedBox(height: 4),
-            Text('Twilio → +91 9110 687 983', style: TextStyle(fontSize: 11, color: Colors.grey[400], fontFamily: 'monospace')),
+            Text('Twilio: +91 9110 687 983', style: TextStyle(fontSize: 11, color: Colors.black54)),
           ]),
         ),
       ],
@@ -757,17 +803,17 @@ class _SettingTile extends StatelessWidget {
     margin: const EdgeInsets.only(bottom: 10),
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     decoration: BoxDecoration(
-      color: const Color(0xFF0D1117), borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: value ? color.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.07)),
+      color: Colors.white, borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: value ? color.withValues(alpha: 0.8) : Colors.black12),
     ),
     child: Row(children: [
       Text(icon, style: const TextStyle(fontSize: 20)),
       const SizedBox(width: 12),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
-        Text(subtitle, style: TextStyle(fontSize: 10, color: Colors.grey[500])),
+        Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black87)),
+        Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.black54)),
       ])),
-      Switch(value: value, onChanged: onChanged, activeColor: color, inactiveThumbColor: Colors.grey[700]),
+      Switch(value: value, onChanged: onChanged, activeColor: color, inactiveThumbColor: Colors.grey[400]),
     ]),
   );
 }
@@ -782,29 +828,42 @@ class _BottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = [
-      (Icons.dashboard_outlined, '  Home'),
-      (Icons.sports_esports_outlined, 'Games'),
-      (Icons.history_outlined, '  Logs'),
-      (Icons.settings_outlined, '  Settings'),
+      (Icons.home_rounded, 'Home'),
+      (Icons.sports_esports_rounded, 'Games'),
+      (Icons.history_rounded, 'Logs'),
+      (Icons.settings_rounded, 'Settings'),
     ];
     return Container(
-      decoration: const BoxDecoration(color: Color(0xFF0D1117), border: Border(top: BorderSide(color: Color(0x12FFFFFF)))),
-      child: Row(children: items.asMap().entries.map((e) {
-        final idx = e.key; final (icon, label) = e.value;
-        final sel = idx == selected;
-        final c = sel ? const Color(0xFF63B3ED) : Colors.grey[600]!;
-        return Expanded(child: InkWell(
-          onTap: () => onTap(idx),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(icon, color: c, size: 20),
-              const SizedBox(height: 3),
-              Text(label, style: TextStyle(fontSize: 9, color: c)),
-            ]),
-          ),
-        ));
-      }).toList()),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+      decoration: const BoxDecoration(
+        color: Colors.black, // Dark capsule bottom nav from reference image
+        borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: List.generate(items.length, (i) {
+          final isAct = selected == i;
+          return GestureDetector(
+            onTap: () { HapticService.successTap(); onTap(i); },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: isAct ? const Color(0xFFE8F5E9).withValues(alpha: 0.15) : Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(items[i].$1, color: isAct ? const Color(0xFFE8F5E9) : Colors.grey[600], size: 22),
+                  const SizedBox(height: 4),
+                  Text(items[i].$2, style: TextStyle(fontSize: 10, fontWeight: isAct ? FontWeight.bold : FontWeight.w500, color: isAct ? const Color(0xFFE8F5E9) : Colors.grey[600])),
+                ],
+              ),
+            ),
+          );
+        }),
+      ),
     );
   }
 }

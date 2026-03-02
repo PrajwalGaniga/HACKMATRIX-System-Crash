@@ -1,0 +1,97 @@
+.container {
+    background: #0A0D14;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    height: 280px;
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: rgba(255, 255, 255, 0.02);
+    flex-shrink: 0;
+}
+
+.title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    flex: 1;
+}
+
+.count {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+}
+
+.clearBtn {
+    font-size: 0.6rem;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.clearBtn:hover {
+    color: var(--accent-red);
+    border-color: var(--accent-red);
+}
+
+.logArea {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    scroll-behavior: smooth;
+}
+
+.logArea::-webkit-scrollbar {
+    width: 4px;
+}
+
+.logArea::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.logArea::-webkit-scrollbar-thumb {
+    background: var(--border-subtle);
+    border-radius: 2px;
+}
+
+.logLine {
+    display: flex;
+    gap: 12px;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.ts {
+    color: #4A5568;
+    flex-shrink: 0;
+    font-size: 0.62rem;
+    padding-top: 1px;
+}
+
+.msg {
+    flex: 1;
+}

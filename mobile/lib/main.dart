@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'services/socket_service.dart';
+import 'services/sensor_service.dart';
 import 'services/haptic_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/intervention_hub.dart';
@@ -10,8 +11,11 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await HapticService.init();
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => SocketService(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => SocketService()),
+        ChangeNotifierProvider(create: (_) => SensorService()),
+      ],
       child: const AegisApp(),
     ),
   );
@@ -32,18 +36,25 @@ class _AegisAppState extends State<AegisApp> {
 
   void _setupSocket() {
     final socket = context.read<SocketService>();
-    socket.onHighTilt = (intervention) async {
-      // 1. Heartbeat haptic pulse
-      HapticService.loopHeartbeat(times: 5);
-      // 2. Direct pushReplacement — no permission check needed
+    final sensor = context.read<SensorService>();
+
+    // Route both Socket-based and Sensor-based high stress to the hub
+    void routeToHub(intervention) {
+      HapticService.heartbeat();
       if (!mounted) return;
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => InterventionHub(intervention: intervention),
         ),
       );
-    };
+    }
+
+    socket.onHighTilt = routeToHub;
+    sensor.onPacingDetected = routeToHub;
+    
     socket.connect();
+    // Start background sensor monitoring for mobile-only users
+    sensor.startMonitoring();
   }
 
   @override
@@ -51,15 +62,15 @@ class _AegisAppState extends State<AegisApp> {
     return MaterialApp(
       title: 'Aegis.ai',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: const Color(0xFF080B14),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF63B3ED),
-          secondary: Color(0xFFFFBF00),
-          surface: Color(0xFF0D1117),
+      theme: ThemeData.light().copyWith(
+        scaffoldBackgroundColor: const Color(0xFFE8F5E9), // Light green mindful bg
+        colorScheme: const ColorScheme.light(
+          primary: Color(0xFF1E1E1E), // Dark text & buttons
+          secondary: Color(0xFF4ADE80), // Soft green accents
+          surface: Colors.white,
           onPrimary: Colors.white,
         ),
-        textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
+        textTheme: GoogleFonts.outfitTextTheme(ThemeData.light().textTheme),
       ),
       home: const HomeScreen(),
     );

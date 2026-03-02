@@ -82,14 +82,14 @@ class _InterventionHubState extends State<InterventionHub> with TickerProviderSt
     final i = widget.intervention;
     final selectedGame = _findGame(i.gameId);
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFFF0FDF4),
       body: FadeTransition(
         opacity: _fadeCtrl,
         child: Container(
-          decoration: BoxDecoration(
-            gradient: RadialGradient(
-              center: const Alignment(0, -0.3), radius: 1.1,
-              colors: [const Color(0xFFFF6B35).withValues(alpha: 0.1), const Color(0xFF080B14), Colors.black],
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter, end: Alignment.bottomCenter,
+              colors: [Colors.white, Color(0xFFE8F5E9), Color(0xFFF0FDF4)],
             ),
           ),
           child: SafeArea(
@@ -102,52 +102,52 @@ class _InterventionHubState extends State<InterventionHub> with TickerProviderSt
                     scale: _pulseAnim,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                      decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(999), border: Border.all(color: Colors.redAccent.withValues(alpha: 0.5))),
+                      decoration: BoxDecoration(color: Colors.redAccent.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(999), border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3))),
                       child: const Row(children: [
-                        Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 13),
+                        Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 14),
                         SizedBox(width: 5),
-                        Text('HIGH TILT', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.redAccent, fontFamily: 'monospace')),
+                        Text('TILT DETECTED', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.redAccent, letterSpacing: 1)),
                       ]),
                     ),
                   ),
                   const Spacer(),
-                  IconButton(icon: const Icon(Icons.close, color: Colors.white30, size: 20), onPressed: () { _launchTimer?.cancel(); Navigator.pop(context); }),
+                  IconButton(icon: const Icon(Icons.close, color: Colors.black38, size: 24), onPressed: () { _launchTimer?.cancel(); Navigator.pop(context); }),
                 ]),
               ),
 
               const SizedBox(height: 16),
-              Text(i.toastEmoji, style: const TextStyle(fontSize: 52)),
+              Text(i.toastEmoji, style: const TextStyle(fontSize: 56)),
               const SizedBox(height: 10),
-              const Text('Aegis is standing guard.', textAlign: TextAlign.center, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
-              const SizedBox(height: 6),
+              const Text('Aegis is here for you.', textAlign: TextAlign.center, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Color(0xFF1E1E1E))),
+              const SizedBox(height: 8),
               if (i.toastMsg.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Text(i.toastMsg, textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Colors.grey[400], height: 1.4)),
+                  child: Text(i.toastMsg, textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: Colors.black87, height: 1.4, fontWeight: FontWeight.w500)),
                 ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
 
               // Breathing + rest
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: const Color(0xFF63B3ED).withValues(alpha: 0.06), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFF63B3ED).withValues(alpha: 0.2))),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.black12), boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))]),
                   child: Column(children: [
-                    Text('💨 ${i.breathingTip.isNotEmpty ? i.breathingTip : "Breathe in 4s · Hold 4s · Out 4s"}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: Color(0xFF76E4F7))),
+                    Text('💨 ${i.breathingTip.isNotEmpty ? i.breathingTip : "Breathe in 4s · Hold 4s · Out 4s"}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.teal)),
                     if (i.restReminder.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text('🌿 ${i.restReminder}', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, color: Colors.grey[500])),
+                      const SizedBox(height: 6),
+                      Text('🌿 ${i.restReminder}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: Colors.black54, fontWeight: FontWeight.w600)),
                     ],
                   ]),
                 ),
               ),
               if (i.triggerCall) Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                  decoration: BoxDecoration(color: const Color(0xFF76E4F7).withValues(alpha: 0.06), borderRadius: BorderRadius.circular(10)),
-                  child: const Text('📞 Calling +91 9110 687 983 via Twilio', style: TextStyle(fontSize: 10, color: Color(0xFF76E4F7), fontFamily: 'monospace')),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(color: Colors.teal.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.teal.withValues(alpha: 0.3))),
+                  child: const Text('📞 Calling +91 9110 687 983 via Twilio', style: TextStyle(fontSize: 11, color: Colors.teal, fontWeight: FontWeight.bold)),
                 ),
               ),
 
@@ -158,25 +158,27 @@ class _InterventionHubState extends State<InterventionHub> with TickerProviderSt
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: selectedGame.color.withValues(alpha: 0.07),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: selectedGame.color.withValues(alpha: 0.3)),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: selectedGame.color.withValues(alpha: 0.4), width: 1.5),
+                      boxShadow: [BoxShadow(color: selectedGame.color.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4))],
                     ),
                     child: Row(children: [
-                      Text(selectedGame.emoji, style: const TextStyle(fontSize: 24)),
-                      const SizedBox(width: 10),
+                      Text(selectedGame.emoji, style: const TextStyle(fontSize: 32)),
+                      const SizedBox(width: 14),
                       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text('🧠 Gemini chose ${selectedGame.title}', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: selectedGame.color)),
-                        Text(selectedGame.subtitle, style: TextStyle(fontSize: 10, color: Colors.grey[500])),
+                        Text('🧠 Gemini chose ${selectedGame.title}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.black87)),
+                        const SizedBox(height: 2),
+                        Text(selectedGame.subtitle, style: TextStyle(fontSize: 11, color: Colors.black54, fontWeight: FontWeight.w600)),
                       ])),
                       GestureDetector(
                         onTap: () { _launchTimer?.cancel(); _launchGame(i.gameId!); },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(color: selectedGame.color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(99)),
-                          child: Text('$_countdown  ▶', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: selectedGame.color, fontFamily: 'monospace')),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(color: selectedGame.color, borderRadius: BorderRadius.circular(99), boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))]),
+                          child: Text('$_countdown  ▶', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white)),
                         ),
                       ),
                     ]),
@@ -187,28 +189,29 @@ class _InterventionHubState extends State<InterventionHub> with TickerProviderSt
 
               // All games horizontal scroll
               SizedBox(
-                height: 90,
+                height: 110,
                 child: ListView.separated(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   scrollDirection: Axis.horizontal,
                   itemCount: _games.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 10),
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
                   itemBuilder: (_, idx) {
                     final g = _games[idx];
                     return GestureDetector(
                       onTap: () => _launchGame(g.id),
                       child: Container(
                         width: 100,
-                        padding: const EdgeInsets.all(10),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: g.color.withValues(alpha: 0.07),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: g.color.withValues(alpha: g.id == i.gameId ? 0.6 : 0.25), width: g.id == i.gameId ? 1.5 : 1),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: g.id == i.gameId ? g.color : Colors.black12, width: g.id == i.gameId ? 2 : 1),
+                          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))],
                         ),
                         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          Text(g.emoji, style: const TextStyle(fontSize: 24)),
-                          const SizedBox(height: 4),
-                          Text(g.title, textAlign: TextAlign.center, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: g.color), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text(g.emoji, style: const TextStyle(fontSize: 32)),
+                          const SizedBox(height: 6),
+                          Text(g.title, textAlign: TextAlign.center, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.blueGrey[800]), maxLines: 1, overflow: TextOverflow.ellipsis),
                         ]),
                       ),
                     );

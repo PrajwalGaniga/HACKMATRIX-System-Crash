@@ -14,6 +14,8 @@ class InterventionModel {
   final String? gameId;
   final Map<String, dynamic> auData;
   final DateTime timestamp;
+  final List<String> gameOptions;
+  final String ctaLabel;
 
   InterventionModel({
     required this.stressLevel,
@@ -31,6 +33,8 @@ class InterventionModel {
     this.gameId,
     this.auData = const {},
     DateTime? timestamp,
+    this.gameOptions = const ['BUBBLE_WRAP', 'BREATHING_TRAINER'],
+    this.ctaLabel = 'Take a 60s Break 🛡️',
   }) : timestamp = timestamp ?? DateTime.now();
 
   factory InterventionModel.fromJson(Map<String, dynamic> json) {
@@ -49,6 +53,8 @@ class InterventionModel {
       triggerCall: json['trigger_call'] ?? false,
       gameId: json['game_id'],
       auData: (json['au_data'] as Map<String, dynamic>?) ?? {},
+      gameOptions: (json['game_options'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? ['BUBBLE_WRAP', 'BREATHING_TRAINER'],
+      ctaLabel: json['cta_label'] ?? 'Take a 60s Break 🛡️',
     );
   }
 

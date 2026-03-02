@@ -124,6 +124,16 @@ class SocketService extends ChangeNotifier {
     _socket!.emit('accel_data', {'x': x, 'y': y, 'z': z});
   }
 
+  void forceReconnect() {
+    debugPrint('🔄 Forcing socket reconnect...');
+    if (_socket != null) {
+      _socket!.disconnect();
+      Future.delayed(const Duration(milliseconds: 300), () => _socket!.connect());
+    } else {
+      connect();
+    }
+  }
+
   void simulateStress() {
     _socket!.emit('au_metadata', {'au4': 0.85, 'au23': 0.90, 'blink_rate': 6});
   }

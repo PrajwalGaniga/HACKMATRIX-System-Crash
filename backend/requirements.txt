@@ -5,3 +5,6 @@ motor
 google-generativeai
 python-dotenv
 httpx
+ultralytics
+opencv-python
+onnxruntime

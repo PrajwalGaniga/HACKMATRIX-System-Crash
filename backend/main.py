@@ -2,13 +2,22 @@ import asyncio
 import os
 import json
 import datetime
+import base64
 import socketio
-from fastapi import FastAPI, Request
+import numpy as np
+from fastapi import FastAPI, Request, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 import google.generativeai as genai
 from dotenv import load_dotenv
+
+# ML imports
+import cv2
+try:
+    from ultralytics import YOLO
+except ImportError:
+    YOLO = None
 
 load_dotenv()
 
@@ -39,7 +48,7 @@ app = FastAPI(title="Aegis.ai Backend v2")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -136,6 +145,159 @@ async def log_intervention(au_data: dict, gemini_result: dict, active_app: str, 
         print(f"Mongo log error: {e}")
 
 # ─────────────────────────────────────────────────────────
+# YOLOv8 — Background Webcam Inference Task
+# ─────────────────────────────────────────────────────────
+ml_active = False
+ml_task = None
+yolo_model = None
+blink_timestamps = []
+
+FALLBACK_STRESS_PATH = "fallback_stress.json"
+FALLBACK_TIMEOUT_SECS = 30
+
+def _load_fallback_data() -> dict:
+    try:
+        with open(FALLBACK_STRESS_PATH) as f:
+            return json.load(f)
+    except Exception:
+        return {"au4": 0.82, "au7": 0.61, "au23": 0.88, "au43": 0.15, "blink_rate": 7, "source": "fallback"}
+
+def _run_yolo_on_frame(frame) -> dict:
+    """Run YOLO inference on a single BGR frame. Returns raw AU dict."""
+    if yolo_model is None:
+        return {}
+    try:
+        results = yolo_model.predict(source=frame, conf=0.25, imgsz=640, verbose=False)
+        au_data = {"au4": 0.0, "au7": 0.0, "au23": 0.0, "au43": 0.0}
+        any_detected = False
+        for r in results:
+            for box in r.boxes:
+                cls_id = int(box.cls[0])
+                score = float(box.conf[0])
+                any_detected = True
+                if cls_id == 0: au_data["au4"] = max(au_data["au4"], score)
+                elif cls_id == 1: au_data["au7"] = max(au_data["au7"], score)
+                elif cls_id == 2: au_data["au23"] = max(au_data["au23"], score)
+                elif cls_id == 3: au_data["au43"] = max(au_data["au43"], score)
+        au_data["_detected"] = any_detected
+        return au_data
+    except Exception as e:
+        print(f"YOLO inference error: {e}")
+        return {}
+
+MODEL_PATH = "ml_model/best1.onnx"
+consecutive_fail_count = 0
+FAIL_SAFE_THRESHOLD = 3  # 3 consecutive failures before force-inject
+_force_stress_task = None
+
+async def _emit_forced_stress(reason: str = "model_failure"):
+    """Force-inject HIGH stress when the model fails to load or detect faces."""
+    active_app = await asyncio.to_thread(get_active_app)
+    forced_payload = {
+        "au4": 0.82, "au7": 0.71, "au23": 0.95, "au43": 0.10,
+        "blink_rate": 5, "timestamp": datetime.datetime.now().timestamp(),
+        "source": "fail_safe", "reason": reason,
+    }
+    # Emit telemetry so dashboard shows AU bars spiking
+    await sio.emit("ml_telemetry", forced_payload)
+    print(f"🚨 Fail-Safe triggered ({reason}) — force-injecting HIGH stress")
+    # Run full Gemini + Twilio intervention pipeline
+    asyncio.create_task(run_intervention_pipeline(forced_payload, active_app))
+    # Log to MongoDB
+    if db is not None:
+        try:
+            await db["interventions"].insert_one({
+                "timestamp": datetime.datetime.utcnow(),
+                "active_app": active_app,
+                "source": "fail_safe",
+                "reason": reason,
+                "stress_level": "HIGH",
+            })
+        except Exception:
+            pass
+
+async def run_yolo_stream():
+    global ml_active, yolo_model, blink_timestamps, consecutive_fail_count
+    if YOLO is None:
+        print("⚠️ Ultralytics not installed — activating fail-safe stress mode.")
+        await _emit_forced_stress("ultralytics_missing")
+        return
+    if not yolo_model:
+        try:
+            yolo_model = YOLO(MODEL_PATH, task="detect")
+            print(f"✅ YOLO model loaded: {MODEL_PATH}")
+        except Exception as e:
+            print(f"⚠️ Failed to load ONNX model: {e}")
+            print("🚨 Activating fail-safe: will inject HIGH stress every 30s")
+            # Immediately inject and then loop every 30s
+            await _emit_forced_stress(f"model_load_failed: {e}")
+            while ml_active:
+                await asyncio.sleep(30)
+                if ml_active:
+                    await _emit_forced_stress("periodic_fail_safe")
+            return
+
+    cap = cv2.VideoCapture(0)
+    print("🎥 Aegis ML Vision Engine started...")
+    last_intervention_time = 0
+    last_detection_time = datetime.datetime.now().timestamp()
+
+    while ml_active:
+        ret, frame = cap.read()
+        if not ret:
+            await asyncio.sleep(0.1)
+            continue
+
+        au_data = await asyncio.to_thread(_run_yolo_on_frame, frame)
+        now = datetime.datetime.now().timestamp()
+        source = "yolo"
+
+        # ── 30s Fallback Logic ──────────────────────────────────
+        if au_data.get("_detected"):
+            last_detection_time = now
+        elif (now - last_detection_time) > FALLBACK_TIMEOUT_SECS:
+            print(f"⚠️ No face detected for {FALLBACK_TIMEOUT_SECS}s — loading fallback_stress.json")
+            fb = _load_fallback_data()
+            au_data = {k: v for k, v in fb.items() if k != "_comment"}
+            source = "fallback"
+
+        au_data.pop("_detected", None)
+
+        # ── Blink Rate from AU43 ────────────────────────────────
+        if au_data.get("au43", 0) > 0.4:
+            if not blink_timestamps or (now - blink_timestamps[-1]) > 0.4:
+                blink_timestamps.append(now)
+        blink_timestamps = [t for t in blink_timestamps if now - t <= 60]
+        if len(blink_timestamps) < 2:
+            bpm = 15
+        else:
+            span = max(1.0, now - blink_timestamps[0])
+            bpm = int((len(blink_timestamps) / span) * 60)
+        bpm = max(5, min(bpm, 40))
+
+        payload = {
+            "au4": au_data.get("au4", 0.0),
+            "au7": au_data.get("au7", 0.0),
+            "au23": au_data.get("au23", 0.0),
+            "au43": au_data.get("au43", 0.0),
+            "blink_rate": au_data.get("blink_rate", bpm),
+            "timestamp": now,
+            "source": source,
+        }
+
+        await sio.emit("ml_telemetry", payload)
+
+        if (payload["au23"] > 0.7 or payload["blink_rate"] < 8) and (now - last_intervention_time > 30):
+            last_intervention_time = now
+            active_app = await asyncio.to_thread(get_active_app)
+            asyncio.create_task(run_intervention_pipeline(payload, active_app))
+
+        await asyncio.sleep(0.08)
+
+    cap.release()
+    print("🛑 Aegis ML Vision Engine stopped.")
+
+# ─────────────────────────────────────────────────────────
 # Gemini — Context-Aware Reasoning (gemini-2.5-flash)
 # ─────────────────────────────────────────────────────────
 async def run_gemini_reasoning(au_data: dict, active_app: str) -> dict:
@@ -156,15 +318,15 @@ Your task:
    - PUBG/game context → gamer-themed, energetic
    - VS Code/coding → coding joke, encouraging
    - Under 120 characters
-3. Pick the BEST game for this context:
-   - High cognitive load/racing thoughts → "MINDFUL_PUZZLE" (color sorting for slow focus)
-   - Angry/frustrated/tilt → "BUBBLE_WRAP" (rapid tactile popping to release energy)
-   - Fast heart rate/panic → "BREATHING_TRAINER" (4-4-4 box breathing guide)
-   - Overwhelmed/stuck → "RELAXING_COLORING" (art therapy, filling mandala)
-   - General burnout/mild stress → "IDLE_GARDEN" (gentle plant growing tap mechanics)
+3. Pick the BEST primary game AND 2 backup options for this context:
+   - High cognitive load/racing thoughts → primary: "MINDFUL_PUZZLE", backups: ["BREATHING_TRAINER", "IDLE_GARDEN"]
+   - Angry/frustrated/tilt → primary: "BUBBLE_WRAP", backups: ["BREATHING_TRAINER", "RELAXING_COLORING"]
+   - Fast heart rate/panic → primary: "BREATHING_TRAINER", backups: ["IDLE_GARDEN", "BUBBLE_WRAP"]
+   - Overwhelmed/stuck → primary: "RELAXING_COLORING", backups: ["MINDFUL_PUZZLE", "IDLE_GARDEN"]
+   - General burnout/mild stress → primary: "IDLE_GARDEN", backups: ["RELAXING_COLORING", "BREATHING_TRAINER"]
 4. Generate breathing_tip: a 4-7-8 or box breathing instruction, 1 sentence, warm tone.
 5. Generate rest_reminder: friendly nudge to hydrate/stand/look away, 1 sentence.
-6. TwiML for Polly.Joanna voice call — max 2 warm sentences. Trigger ONLY on HIGH.
+6. TwiML for Polly.Joanna voice call — script MUST sound extremely natural, start with a warm greeting ("Hey Prajwal..."), offer brief, empathetic motivation based on the context, and END GENTLY and professionally ("...take care, I've got your back. Bye."). Max 3 sentences. Trigger ONLY on HIGH.
 
 Respond ONLY with valid JSON, no markdown fences:
 {{
@@ -179,6 +341,8 @@ Respond ONLY with valid JSON, no markdown fences:
   "breathing_tip": "breathe in for 4s, hold 4s, out 4s — you've got this",
   "rest_reminder": "Drink some water and look out a window for 20 seconds.",
   "game_id": "BUBBLE_WRAP" | "RELAXING_COLORING" | "BREATHING_TRAINER" | "MINDFUL_PUZZLE" | "IDLE_GARDEN",
+  "game_options": ["PRIMARY_GAME", "BACKUP_1", "BACKUP_2"],
+  "cta_label": "Take a 60s Break",
   "twiml_script": "<Response><Say voice='Polly.Joanna'>YOUR_SCRIPT</Say></Response>",
   "trigger_call": true | false
 }}
@@ -288,6 +452,9 @@ MOCK_USER = {
     "sessions_today": 4, "tilt_events_avoided": 12,
 }
 
+last_processed_time = 0.0
+infer_miss_count = 0
+
 @app.get("/api/user")
 async def get_user():
     if db is not None:
@@ -319,6 +486,138 @@ async def active_app_endpoint():
     """Let the frontend poll the currently focused window."""
     app_name = await asyncio.to_thread(get_active_app)
     return {"active_app": app_name}
+
+@app.post("/api/toggle-ml")
+async def toggle_ml(request: Request):
+    """Start or stop the YOLOv8 webcam inference loop."""
+    global ml_active, ml_task
+    data = await request.json()
+    enable = data.get("active", False)
+    
+    ml_active = enable
+    if ml_active and (ml_task is None or ml_task.done()):
+        ml_task = asyncio.create_task(run_yolo_stream())
+        
+    return JSONResponse(content={"status": "ok", "ml_active": ml_active})
+
+@app.post("/api/infer-frame")
+async def infer_frame(request: Request):
+    """
+    Accept a base64-encoded PNG/JPEG frame from the React browser webcam canvas.
+    Run YOLO inference and return AU scores. Emits ml_telemetry via Socket.IO.
+    """
+    try:
+        data = await request.json()
+        b64 = data.get("image_b64", "")
+        # Strip data URL prefix if present
+        if "," in b64:
+            b64 = b64.split(",", 1)[1]
+        img_bytes = base64.b64decode(b64)
+        nparr = np.frombuffer(img_bytes, dtype=np.uint8)
+        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        if frame is None:
+            return JSONResponse(content={"error": "Could not decode image"}, status_code=400)
+
+        # Ensure model is loaded (lazy load for browser endpoint)
+        global yolo_model
+        if yolo_model is None and YOLO is not None:
+            try:
+                yolo_model = YOLO(MODEL_PATH, task="detect")
+                print(f"✅ YOLO lazy-loaded for browser endpoint: {MODEL_PATH}")
+            except Exception as e:
+                # Fail-safe: return mocked HIGH-stress AU if model fails
+                print(f"⚠️ infer-frame model load failed: {e} — using fail-safe values")
+                now2 = datetime.datetime.now().timestamp()
+                fs = {"au4": 0.82, "au7": 0.71, "au23": 0.95, "au43": 0.10, "blink_rate": 5, "timestamp": now2, "source": "fail_safe"}
+                await sio.emit("ml_telemetry", fs)
+                asyncio.create_task(run_intervention_pipeline(fs, await asyncio.to_thread(get_active_app)))
+                return JSONResponse(content=fs)
+
+        au_data = await asyncio.to_thread(_run_yolo_on_frame, frame)
+        detected = au_data.pop("_detected", False)
+        now = datetime.datetime.now().timestamp()
+
+        # ── Model Fallback Logic (6s / 3 misses) ────────────────
+        if not detected:
+            infer_miss_count += 1
+            if infer_miss_count >= 3:
+                print(f"⚠️ No face detected for 3 consecutive samples ({infer_miss_count * 2}s) — using fallback_stress.json")
+                fb = _load_fallback_data()
+                fs = {k: v for k, v in fb.items() if k != "_comment"}
+                fs["timestamp"] = now
+                fs["source"] = "fallback"
+                await sio.emit("ml_telemetry", fs)
+                asyncio.create_task(run_intervention_pipeline(fs, await asyncio.to_thread(get_active_app)))
+                return JSONResponse(content=fs)
+        else:
+            infer_miss_count = 0
+
+        # Estimate blink rate (simplified for single-frame analysis)
+        bpm = 15 if au_data.get("au43", 0) < 0.4 else 10
+
+        payload = {**au_data, "blink_rate": bpm, "timestamp": now, "source": "browser_webcam"}
+        await sio.emit("ml_telemetry", payload)
+        return JSONResponse(content=payload)
+    except Exception as e:
+        print(f"/api/infer-frame error: {e}")
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.post("/api/upload-frame")
+async def upload_frame(file: UploadFile = File(...)):
+    """
+    Accept a multipart image upload for instant testing.
+    Rate-limited to 1 frame every 2 seconds.
+    """
+    global last_processed_time, infer_miss_count, yolo_model
+    now_ms = datetime.datetime.now().timestamp()
+    if now_ms - last_processed_time < 2.0:
+        return JSONResponse(content={"status": "skipped", "reason": "rate_limit_active"})
+    
+    last_processed_time = now_ms
+
+    try:
+        contents = await file.read()
+        nparr = np.frombuffer(contents, dtype=np.uint8)
+        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        if frame is None:
+            return JSONResponse(content={"error": "Cannot decode image"}, status_code=400)
+
+        global yolo_model
+        if yolo_model is None and YOLO is not None:
+            try:
+                yolo_model = YOLO(MODEL_PATH, task="detect")
+            except Exception as e:
+                return JSONResponse(content={"error": f"Model load failed: {e}"}, status_code=500)
+
+        au_data = await asyncio.to_thread(_run_yolo_on_frame, frame)
+        au_data.pop("_detected", None)
+
+        now = datetime.datetime.now().timestamp()
+        bpm = 15 if au_data.get("au43", 0) < 0.4 else 10
+        payload = {**au_data, "blink_rate": bpm, "timestamp": now, "source": "file_upload"}
+        await sio.emit("ml_telemetry", payload)
+
+        # Auto-run a quick Gemini intervention analysis on this upload
+        active_app = await asyncio.to_thread(get_active_app)
+        payload_with_meta = {**payload, "au4": payload.get("au4", 0), "au23": payload.get("au23", 0)}
+        asyncio.create_task(run_intervention_pipeline(payload_with_meta, active_app))
+
+        return JSONResponse(content={"status": "ok", "au_data": payload, "message": "Inference complete. Check debug log for Gemini response."})
+    except Exception as e:
+        print(f"/api/upload-frame error: {e}")
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+
+@app.get("/health")
+async def health_check():
+    """Used by React dashboard to check backend status and ML state."""
+    return JSONResponse(content={
+        "status": "ok",
+        "ml_active": ml_active,
+        "model_loaded": yolo_model is not None,
+        "model_path": MODEL_PATH,
+        "timestamp": datetime.datetime.utcnow().isoformat(),
+    })
 
 @app.post("/trigger-stress")
 async def trigger_stress():

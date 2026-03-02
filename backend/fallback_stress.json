@@ -1,0 +1,9 @@
+{
+    "au4": 0.82,
+    "au7": 0.61,
+    "au23": 0.88,
+    "au43": 0.15,
+    "blink_rate": 7,
+    "source": "fallback",
+    "_comment": "This file is auto-served when YOLO webcam detects no face for 30+ seconds. It keeps the demo alive with realistic high-stress values."
+}
